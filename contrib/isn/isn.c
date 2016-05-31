@@ -16,6 +16,8 @@
 
 #include "fmgr.h"
 #include "utils/builtins.h"
+#include "lib/stringinfo.h"
+#include "libpq/pqformat.h"
 
 #include "isn.h"
 #include "EAN13.h"
@@ -1035,6 +1037,29 @@ upc_in(PG_FUNCTION_ARGS)
 
 	(void) string2ean(str, false, &result, UPC);
 	PG_RETURN_EAN13(result);
+}
+
+/* binary I/O functions
+*/
+PG_FUNCTION_INFO_V1(ean13_recv);
+Datum
+ean13_recv(PG_FUNCTION_ARGS)
+{
+	StringInfo      buf = (StringInfo) PG_GETARG_POINTER(0);
+
+	PG_RETURN_EAN13((ean13) pq_getmsgint64(buf));
+}
+
+PG_FUNCTION_INFO_V1(ean13_send);
+Datum
+ean13_send(PG_FUNCTION_ARGS)
+{
+	ean13 val = PG_GETARG_EAN13(0);
+	StringInfoData buf;
+
+	pq_begintypsend(&buf);
+	pq_sendint64(&buf, val);
+	PG_RETURN_BYTEA_P(pq_endtypsend(&buf));
 }
 
 /* casting functions
